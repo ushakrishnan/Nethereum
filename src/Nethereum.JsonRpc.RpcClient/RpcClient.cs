@@ -57,7 +57,7 @@ namespace Nethereum.JsonRpc.Client
         
         //ChainGenie update made to return RpcResponse.  Useful when response will be parsed response.result
         //to get ABI information and contractBytecode while automating custom contract deployments
-        public async Task<RpcResponse> SendRequestAsyncCustom(RpcRequest request, string route = null)
+        public async Task<RpcResponse> SendRequestAsyncReturnResponse(RpcRequest request, string route = null)
         {
             var response =
                 await _innerRpcClient.SendRequestAsync(
