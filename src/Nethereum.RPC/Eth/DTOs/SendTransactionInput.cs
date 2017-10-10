@@ -21,8 +21,18 @@ namespace Nethereum.RPC.Eth.DTOs
         {
         }
 
-        public TransactionInput(string data, string addressTo, string adddressFrom, HexBigInteger gas,
-            HexBigInteger value) : base(data, addressTo, adddressFrom, gas, value)
+        public TransactionInput(string data, string addressTo, string addressFrom, HexBigInteger gas,
+            HexBigInteger value) : base(data, addressTo, addressFrom, gas, value)
+        {
+        }
+
+        public TransactionInput(string data, string addressFrom, HexBigInteger gas,
+            HexBigInteger value) : base(data, addressFrom, gas, value)
+        {
+        }
+
+        public TransactionInput(string data, string addressTo, string adddressFrom, HexBigInteger gas, HexBigInteger gasPrice,
+          HexBigInteger value) : base(data, addressTo, adddressFrom, gas, gasPrice, value)
         {
         }
 

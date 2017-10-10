@@ -4,21 +4,14 @@ using System.Linq;
 using System.Reflection;
 using Nethereum.ABI.FunctionEncoding.AttributeEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
     public class ParameterDecoder
     {
-        public PropertyInfo[] GetPropertiesWithParameterAttributes(params PropertyInfo[] properties)
-        {
-            var result = new List<PropertyInfo>();
-            foreach (var property in properties)
-                if (property.IsDefined(typeof(ParameterAttribute), false))
-                    result.Add(property);
-            return result.ToArray();
-        }
-
+      
         public T DecodeAttributes<T>(string output, T result, params PropertyInfo[] properties)
         {
             if (output == "0x") return result;
@@ -27,7 +20,12 @@ namespace Nethereum.ABI.FunctionEncoding
             foreach (var property in properties)
                 if (property.IsDefined(typeof(ParameterAttribute), false))
                 {
-                    var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+
+#if DOTNET35
+                   var parameterAttribute = (ParameterAttribute)property.GetCustomAttributes(typeof(ParameterAttribute), false)[0];
+#else
+                   var parameterAttribute = property.GetCustomAttribute<ParameterAttribute>();
+#endif
                     parameterObjects.Add(new ParameterOutputProperty
                     {
                         Parameter = parameterAttribute.Parameter,
@@ -42,7 +40,12 @@ namespace Nethereum.ABI.FunctionEncoding
             {
                 var parameter = (ParameterOutputProperty) parameterResult;
                 var propertyInfo = parameter.PropertyInfo;
+
+#if DOTNET35
+                propertyInfo.SetValue(result, parameter.Result, null);
+#else
                 propertyInfo.SetValue(result, parameter.Result);
+#endif
             }
 
             return result;
@@ -93,7 +96,7 @@ namespace Nethereum.ABI.FunctionEncoding
                 if (currentDataItem != null)
                 {
                     var bytes =
-                        outputBytes.Skip(currentDataItem.DataIndexStart).Take(nextDataItem.DataIndexStart).ToArray();
+                        outputBytes.Skip(currentDataItem.DataIndexStart).Take(nextDataItem.DataIndexStart - currentDataItem.DataIndexStart).ToArray();
                     currentDataItem.Result = currentDataItem.Parameter.ABIType.Decode(bytes, currentDataItem.DecodedType);
                 }
                 currentDataItem = nextDataItem;
@@ -106,32 +109,19 @@ namespace Nethereum.ABI.FunctionEncoding
             }
             return outputParameters.ToList();
         }
-    }
 
+        public PropertyInfo[] GetPropertiesWithParameterAttributes(params PropertyInfo[] properties)
+        {
+            var result = new List<PropertyInfo>();
+            foreach (var property in properties)
+                if (property.IsDefined(typeof(ParameterAttribute), false))
+                    result.Add(property);
+            return result.ToArray();
+        }
+    }
 
     public class FunctionCallDecoder : ParameterDecoder
     {
-        public T DecodeSimpleTypeOutput<T>(Parameter outputParameter, string output)
-        {
-            if (output == "0x") return default(T);
-
-            if (outputParameter != null)
-            {
-                var parmeterOutput = new ParameterOutput
-                {
-                    DecodedType = typeof(T),
-                    Parameter = outputParameter
-                };
-
-                var results = DecodeOutput(output, parmeterOutput);
-
-                if (results.Any())
-                    return (T) results[0].Result;
-            }
-
-            return default(T);
-        }
-
         public List<ParameterOutput> DecodeFunctionInput(string sha3Signature, string data,
             params Parameter[] parameters)
         {
@@ -144,6 +134,34 @@ namespace Nethereum.ABI.FunctionEncoding
             return DecodeDefaultData(data, parameters);
         }
 
+        public T DecodeFunctionOutput<T>(string output) where T : new()
+        {
+            if (output == "0x") return default(T);
+            var result = new T();
+            DecodeFunctionOutput(result, output);
+            return result;
+        }
+
+        public T DecodeFunctionOutput<T>(T functionOutputResult, string output)
+        {
+            if (output == "0x")
+                return functionOutputResult;
+
+            var type = typeof(T);
+
+            var function = FunctionOutputAttribute.GetAttribute<T>();
+            if (function == null)
+                throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
+
+#if DOTNET35
+            var properties = type.GetTypeInfo().DeclaredProperties();
+#else
+            var properties = type.GetTypeInfo().DeclaredProperties;
+#endif
+            DecodeAttributes(output, functionOutputResult, properties.ToArray());
+
+            return functionOutputResult;
+        }
 
         /// <summary>
         ///     Decodes the output of a function using either a FunctionOutputAttribute  (T)
@@ -170,32 +188,25 @@ namespace Nethereum.ABI.FunctionEncoding
             return DecodeFunctionOutput<T>(output);
         }
 
-
-        public T DecodeFunctionOutput<T>(string output) where T : new()
+        public T DecodeSimpleTypeOutput<T>(Parameter outputParameter, string output)
         {
             if (output == "0x") return default(T);
-            var result = new T();
-            DecodeFunctionOutput(result, output);
-            return result;
-        }
 
+            if (outputParameter != null)
+            {
+                var parmeterOutput = new ParameterOutput
+                {
+                    DecodedType = typeof(T),
+                    Parameter = outputParameter
+                };
 
-        public T DecodeFunctionOutput<T>(T functionOutputResult, string output)
-        {
-            if (output == "0x")
-                return functionOutputResult;
+                var results = DecodeOutput(output, parmeterOutput);
 
-            var type = typeof(T);
+                if (results.Any())
+                    return (T) results[0].Result;
+            }
 
-            var function = FunctionOutputAttribute.GetAttribute<T>();
-            if (function == null)
-                throw new ArgumentException("Generic Type should have a Function Ouput Attribute");
-
-            var properties = type.GetTypeInfo().DeclaredProperties;
-
-            DecodeAttributes(output, functionOutputResult, properties.ToArray());
-
-            return functionOutputResult;
+            return default(T);
         }
     }
 }

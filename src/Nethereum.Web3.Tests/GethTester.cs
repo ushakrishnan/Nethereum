@@ -1,7 +1,10 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Web3.Accounts;
+using Nethereum.Web3.Accounts.Managed;
 using Xunit;
 
 namespace Nethereum.Web3.Tests
@@ -14,46 +17,22 @@ namespace Nethereum.Web3.Tests
 
         public GethTester(Web3 web3, string account, string password)
         {
-            Web3 = web3;
-            Account = account;
-            Password = password;
+           this.Web3 = new Web3(new ManagedAccount(account, password), web3.Client);
+            this.Account = account;
+            this.Password = password;
         }
 
         public async Task<bool> UnlockAccount()
         {
-            return await Web3.Personal.UnlockAccount.SendRequestAsync(Account, Password, new HexBigInteger(600));
+            return await Web3.Personal.UnlockAccount.SendRequestAsync(Account, Password, 600);
         }
 
-        public async Task<bool> StartMining()
-        {
-            return await Web3.Miner.Start.SendRequestAsync();
-        }
-
-        public async Task<bool> StopMining()
-        {
-            return await Web3.Miner.Stop.SendRequestAsync();
-        }
-
-        public async Task<bool> LockAccount()
-        {
-            return await Web3.Personal.LockAccount.SendRequestAsync(Account);
-        }
 
         public async Task<TransactionReceipt> DeployTestContractLocal(string contractByteCode)
         {
 
-            var result = await UnlockAccount();
-            Assert.True(result, "Account should be unlocked");
-            //deploy the contract, no need to use the abi as we don't have a constructor
             var transactionHash = await Web3.Eth.DeployContract.SendRequestAsync(contractByteCode, Account, new HexBigInteger(900000));
             Assert.NotNull(transactionHash);
-            //the contract should be mining now
-
-            result = await LockAccount();
-            Assert.True(result, "Account should be locked");
-
-            result = await StartMining();
-            Assert.True(result, "Mining should have started");
             //the contract should be mining now
 
             //get the contract address 
@@ -61,10 +40,24 @@ namespace Nethereum.Web3.Tests
 
             Assert.NotNull(receipt.ContractAddress);
 
-            result = await StopMining();
-            Assert.True(result, "Mining should have stopped");
             return receipt;
         }
+
+
+        public async Task<TransactionReceipt> DeployTestContractLocal(string abi, string contractByteCode, params object[] constructorParameters)
+        {
+
+            var transactionHash = await Web3.Eth.DeployContract.SendRequestAsync(abi, contractByteCode, Account, new HexBigInteger(900000), constructorParameters);
+            Assert.NotNull(transactionHash);
+  
+            //get the contract address 
+            var receipt = await GetTransactionReceipt(transactionHash);
+
+            Assert.NotNull(receipt.ContractAddress);
+
+            return receipt;
+        }
+
 
         public async Task<TransactionReceipt> GetTransactionReceipt(string transactionHash)
         {

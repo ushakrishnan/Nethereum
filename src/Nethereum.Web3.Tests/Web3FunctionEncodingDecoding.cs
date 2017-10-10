@@ -1,4 +1,8 @@
+using Nethereum.Hex.HexTypes;
+using Nethereum.Web3.Accounts;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 using System.Numerics;
 using Xunit;
 
@@ -9,12 +13,15 @@ namespace Nethereum.Web3.Tests
       
         [Fact]
         public void ShouldDecodeInt()
-        { 
+        {
+            
+
             var abi =
                 @"[{""constant"":false,""inputs"":[{""name"":""a"",""type"":""uint256""}],""name"":""multiply"",""outputs"":[{""name"":""d"",""type"":""uint256""}],""type"":""function""}]";
 
+
             var web3 = new Web3(ClientFactory.GetClient());
-          
+
             var contract = web3.Eth.GetContract(abi, "ContractAddress");
 
             //get the function by name
@@ -51,9 +58,11 @@ namespace Nethereum.Web3.Tests
 
             if (listObjects != null)
             {
-                var newArray = System.Array.ConvertAll(listObjects.ToArray(), x => (int)((BigInteger)x));
+                //System.Array.ConvertAll(listObjects.ToArray(), x => (int)((BigInteger)x));
+                var newArray = listObjects.Select(x => (int)((BigInteger)x)).ToArray();  
                 Assert.Equal(array, newArray);
             }
         }
     }
 }
+ 

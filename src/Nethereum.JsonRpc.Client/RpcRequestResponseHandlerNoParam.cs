@@ -1,32 +1,28 @@
 ﻿using System.Threading.Tasks;
-using EdjCase.JsonRpc.Client;
-using EdjCase.JsonRpc.Core;
 
 namespace Nethereum.JsonRpc.Client
 {
-    public class RpcRequestResponseHandlerNoParam<TResponse>: IRpcRequestHandler
+    public class RpcRequestResponseHandlerNoParam<TResponse> : IRpcRequestHandler
     {
+        public RpcRequestResponseHandlerNoParam(IClient client, string methodName)
+        {
+            MethodName = methodName;
+            Client = client;
+        }
+
         public string MethodName { get; }
         public IClient Client { get; }
 
-        public RpcRequestResponseHandlerNoParam(IClient client, string methodName)
+        public virtual Task<TResponse> SendRequestAsync(object id)
         {
-            this.MethodName = methodName;
-            this.Client = client;
+            return Client.SendRequestAsync<TResponse>(BuildRequest(id));
         }
 
-        public virtual async Task<TResponse> SendRequestAsync(object id)
-        {
-            var response = await Client.SendRequestAsync(BuildRequest(id)).ConfigureAwait(false);
-            if (response.HasError) throw new RpcResponseException(response);
-            return response.GetResult<TResponse>();
-        }
-        public RpcRequest BuildRequest(object id)
+        public RpcRequest BuildRequest(object id = null)
         {
             if (id == null) id = Configuration.DefaultRequestId;
-        
+
             return new RpcRequest(id, MethodName);
         }
     }
-
 }

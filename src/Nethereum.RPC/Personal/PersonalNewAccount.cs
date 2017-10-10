@@ -1,5 +1,6 @@
+using System;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Core;
+ 
 using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.RPC.Personal
@@ -19,13 +20,15 @@ namespace Nethereum.RPC.Personal
         {
         }
 
-        public async Task<string> SendRequestAsync(string passPhrase, object id = null)
+        public Task<string> SendRequestAsync(string passPhrase, object id = null)
         {
-            return await base.SendRequestAsync(id, passPhrase).ConfigureAwait(false);
+            if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
+            return SendRequestAsync(id, passPhrase);
         }
 
         public RpcRequest BuildRequest(string passPhrase, object id = null)
         {
+            if (passPhrase == null) throw new ArgumentNullException(nameof(passPhrase));
             return base.BuildRequest(id, passPhrase);
         }
     }

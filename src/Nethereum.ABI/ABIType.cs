@@ -28,7 +28,6 @@ namespace Nethereum.ABI
         /// </summary>
         public virtual string CanonicalName => Name;
 
-
         /// <returns> fixed size in bytes or negative value if the type is dynamic </returns>
         public virtual int FixedSize => 32;
 
@@ -48,33 +47,14 @@ namespace Nethereum.ABI
             if ("bytes".Equals(typeName))
                 return new BytesType();
             if (typeName.StartsWith("bytes", StringComparison.Ordinal))
-                return new Bytes32Type(typeName);
+            {
+                var size = Convert.ToInt32(typeName.Substring(5));
+                if (size == 32)
+                    return new Bytes32Type(typeName);
+                else
+                    return new BytesElementaryType(typeName, size);
+            }
             throw new ArgumentException("Unknown type: " + typeName);
-        }
-
-
-        /// <summary>
-        ///     Encodes the value according to specific type rules
-        /// </summary>
-        /// <param name="value"> </param>
-        public byte[] Encode(object value)
-        {
-            return Encoder.Encode(value);
-        }
-
-        public bool IsDynamic()
-        {
-            return FixedSize < 0;
-        }
-
-        public override string ToString()
-        {
-            return Name;
-        }
-
-        public Type GetDefaultDecodingType()
-        {
-            return Decoder.GetDefaultDecodingType();
         }
 
         public object Decode(byte[] encoded, Type type)
@@ -95,6 +75,30 @@ namespace Nethereum.ABI
         public T Decode<T>(byte[] encoded)
         {
             return Decoder.Decode<T>(encoded);
+        }
+
+        /// <summary>
+        ///     Encodes the value according to specific type rules
+        /// </summary>
+        /// <param name="value"> </param>
+        public byte[] Encode(object value)
+        {
+            return Encoder.Encode(value);
+        }
+
+        public Type GetDefaultDecodingType()
+        {
+            return Decoder.GetDefaultDecodingType();
+        }
+
+        public bool IsDynamic()
+        {
+            return FixedSize < 0;
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

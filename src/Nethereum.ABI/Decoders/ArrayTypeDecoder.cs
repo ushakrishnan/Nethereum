@@ -15,9 +15,11 @@ namespace Nethereum.ABI.Decoders
 
         protected ABIType ElementType { get; set; }
 
-        public override bool IsSupportedType(Type type)
+        public override object Decode(byte[] encoded, Type type)
         {
-            return GetIListElementType(type) != null;
+            if (!ElementType.IsDynamic())
+                return DecodeStaticElementType(encoded, type);
+            throw new NotSupportedException("Arrays containing Dynamic Types are not supported");
         }
 
         public override Type GetDefaultDecodingType()
@@ -25,11 +27,9 @@ namespace Nethereum.ABI.Decoders
             return typeof(List<object>);
         }
 
-        public override object Decode(byte[] encoded, Type type)
+        public override bool IsSupportedType(Type type)
         {
-            if (!ElementType.IsDynamic())
-                return DecodeStaticElementType(encoded, type);
-            throw new NotSupportedException("Arrays containing Dynamic Types are not supported");
+            return GetIListElementType(type) != null;
         }
 
         protected virtual object DecodeStaticElementType(byte[] encoded, Type type)
@@ -59,11 +59,17 @@ namespace Nethereum.ABI.Decoders
 
         protected static Type GetIListElementType(Type listType)
         {
+#if DOTNET35
+            var enumType = listType.GetTypeInfo().ImplementedInterfaces()
+            .Where(i => i.GetTypeInfo().IsGenericType && (i.GenericTypeArguments().Length == 1))
+            .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            return enumType?.GenericTypeArguments()[0];
+#else
             var enumType = listType.GetTypeInfo().ImplementedInterfaces
-                .Where(i => i.GetTypeInfo().IsGenericType && (i.GenericTypeArguments.Length == 1))
-                .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
+            .Where(i => i.GetTypeInfo().IsGenericType && (i.GenericTypeArguments.Length == 1))
+            .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             return enumType?.GenericTypeArguments[0];
+#endif
         }
     }
 }

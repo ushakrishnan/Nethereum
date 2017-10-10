@@ -1,5 +1,6 @@
+using System;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Core;
+ 
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
@@ -36,6 +37,7 @@ namespace Nethereum.RPC.Eth.Blocks
 
         public Task<HexBigInteger> SendRequestAsync(BlockParameter block, object id = null)
         {
+            if (block == null) throw new ArgumentNullException(nameof(block));
             return base.SendRequestAsync(id, block);
         }
 
@@ -46,6 +48,7 @@ namespace Nethereum.RPC.Eth.Blocks
 
         public RpcRequest BuildRequest(BlockParameter block, object id = null)
         {
+            if (block == null) throw new ArgumentNullException(nameof(block));
             return base.BuildRequest(id, block);
         }
     }

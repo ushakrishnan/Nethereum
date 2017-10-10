@@ -1,6 +1,8 @@
+using System;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Core;
+ 
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.RPC.Eth.Filters
 {
@@ -28,11 +30,13 @@ namespace Nethereum.RPC.Eth.Filters
 
         public Task<FilterLog[]> SendRequestAsync(NewFilterInput newFilter, object id = null)
         {
+            if (newFilter == null) throw new ArgumentNullException(nameof(newFilter));
             return base.SendRequestAsync(id, newFilter);
         }
 
         public RpcRequest BuildRequest(NewFilterInput newFilter, object id = null)
         {
+            if (newFilter == null) throw new ArgumentNullException(nameof(newFilter));
             return base.BuildRequest(id, newFilter);
         }
     }

@@ -66,7 +66,7 @@ namespace Nethereum.Web3.Tests
 
           
             var pass = "password";
-            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600));
+            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, 600);
 
             //deploy the contract, including abi and a paramter of 7. 
             var transactionHash =
@@ -103,9 +103,6 @@ namespace Nethereum.Web3.Tests
 
             var test8 = contract.GetFunction("test8");
             Assert.True(await test8.CallAsync<bool>(BigInteger.Parse("9223372036854775808")));
-
-
-
 
             return "OK";
         }

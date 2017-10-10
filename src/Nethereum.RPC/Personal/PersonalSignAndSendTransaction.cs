@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Core;
+ 
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -14,7 +14,7 @@ namespace Nethereum.RPC.Personal
     public class PersonalSignAndSendTransaction : RpcRequestResponseHandler<string>
     {
         public PersonalSignAndSendTransaction(IClient client)
-            : base(client, ApiMethods.personal_signAndSendTransaction.ToString())
+            : base(client, ApiMethods.personal_sendTransaction.ToString())
         {
         }
 

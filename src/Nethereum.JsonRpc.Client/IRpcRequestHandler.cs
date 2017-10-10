@@ -1,4 +1,3 @@
-
 namespace Nethereum.JsonRpc.Client
 {
     public interface IRpcRequestHandler

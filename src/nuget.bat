@@ -1,27 +1,85 @@
 rem packing web3 and dependencies
+del /S *.*.nupkg
+SET releaseSuffix=
+SET targetNet35=false
+
 cd Nethereum.Hex
-dotnet pack
+CALL :restorepack
 cd ..
+
 cd Nethereum.ABI
-dotnet pack
+CALL :restorepack
 cd ..
+
 cd Nethereum.JsonRpc.Client
-dotnet pack
+CALL :restorepack
 cd ..
+
 cd Nethereum.RPC
-dotnet pack
+CALL :restorepack
 cd ..
+
 cd Nethereum.Web3
-dotnet pack
+CALL :restorepack
 cd ..
-cd Nethereum.StandardToken
-dotnet pack
+
+cd Nethereum.StandardToken*
+CALL :restorepack
 cd ..
-cd Nethereum.JsonRpc.IpcClient
-dotnet pack
+
+cd Nethereum.JsonRpc.IpcClient*
+CALL :restorepack
 cd ..
+
+cd Nethereum.JsonRpc.RpcClient*
+CALL :restorepack
+cd ..
+
+cd Nethereum.KeyStore*
+CALL :restorepack
+cd ..
+
+cd Nethereum.ENS*
+CALL :restorepack
+cd ..
+
+cd Nethereum.Quorum*
+CALL :restorepack
+cd ..
+
+cd Nethereum.Geth*
+CALL :restorepack
+cd ..
+
+cd Nethereum.Contracts*
+CALL :restorepack
+cd ..
+
+cd Nethereum.RLP*
+CALL :restorepack
+cd ..
+
+cd Nethereum.Signer*
+CALL :restorepack
+cd ..
+
+cd Nethereum.Util*
+CALL :restorepack
+cd ..
+
+cd Nethereum.Uport*
+CALL :restorepack
+cd ..
+
 setlocal
 set DIR=%~dp0
 set OUTPUTDIR=%~dp0\packages
 for /R %DIR% %%a in (*.nupkg) do xcopy "%%a" "%OUTPUTDIR%"
 xcopy *.nupkg packages /s /y
+
+EXIT /B %ERRORLEVEL%
+
+:restorepack
+dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
+dotnet pack /property:TargetNet35=%targetNet35%
+EXIT /B 0

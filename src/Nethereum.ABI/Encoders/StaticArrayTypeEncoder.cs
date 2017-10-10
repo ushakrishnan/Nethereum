@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using Nethereum.ABI.Util;
+using Nethereum.Util;
 
 namespace Nethereum.ABI.Encoders
 {
@@ -8,7 +9,6 @@ namespace Nethereum.ABI.Encoders
     {
         private readonly int arraySize;
         private readonly ABIType elementType;
-
 
         public StaticArrayTypeEncoder(ABIType elementType, int arraySize)
         {

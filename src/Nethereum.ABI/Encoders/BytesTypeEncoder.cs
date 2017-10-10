@@ -1,21 +1,23 @@
 using System;
 using System.Linq;
 using Nethereum.ABI.Util;
+using Nethereum.Util;
 
 namespace Nethereum.ABI.Encoders
 {
     public class BytesTypeEncoder : ITypeEncoder
     {
-        private readonly IntTypeEncoder intTypeEncoder;
+        private readonly IntTypeEncoder _intTypeEncoder;
 
         public BytesTypeEncoder()
         {
-            intTypeEncoder = new IntTypeEncoder();
+            _intTypeEncoder = new IntTypeEncoder();
         }
 
         public byte[] Encode(object value)
         {
-            return Encode(value, true);
+            //default to false, this is a byte array we are not responsible for endianism
+            return Encode(value, false);
         }
 
         public byte[] Encode(object value, bool checkEndian)
@@ -31,7 +33,7 @@ namespace Nethereum.ABI.Encoders
 
             Array.Copy(bb, 0, ret, 0, bb.Length);
 
-            return ByteUtil.Merge(intTypeEncoder.EncodeInt(bb.Length), ret);
+            return ByteUtil.Merge(_intTypeEncoder.EncodeInt(bb.Length), ret);
         }
     }
 }

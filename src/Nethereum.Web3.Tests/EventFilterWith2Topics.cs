@@ -2,9 +2,11 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Geth;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Xunit;
+using System.Threading;
 
 namespace Nethereum.Web3.Tests
 {
@@ -55,12 +57,7 @@ namespace Nethereum.Web3.Tests
             var addressFrom = "0x12890d2cce102216644c59dae5baed380d84830c";
             var pass = "password";
 
-            var web3 = new Web3(ClientFactory.GetClient());
-
-            var result = await web3.Personal.UnlockAccount.SendRequestAsync(addressFrom, pass, new HexBigInteger(600000));
-            Assert.True(result, "Account should be unlocked");
-
-           
+            var web3 = new Web3Geth(ClientFactory.GetClient());
 
             var eth = web3.Eth;
             var transactions = eth.Transactions;
@@ -70,9 +67,6 @@ namespace Nethereum.Web3.Tests
 
             Assert.NotNull(transactionHash);
 
-            result = await web3.Miner.Start.SendRequestAsync(4);
-            Assert.True(result, "Mining should have started");
-
             //the contract should be mining now
 
             //get the contract address 
@@ -80,7 +74,7 @@ namespace Nethereum.Web3.Tests
             //wait for the contract to be mined to the address
             while (receipt == null)
             {
-                await Task.Delay(5000);
+                Thread.Sleep(100);
                 receipt = await transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
             }
 
@@ -112,9 +106,9 @@ namespace Nethereum.Web3.Tests
             var multiplyFunction = contract.GetFunction("multiply");
            
             var gas = await multiplyFunction.EstimateGasAsync(69);
-            var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, 69);
-            var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, 18);
-            var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, 7);
+            var transaction69 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 69);
+            var transaction18 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 18);
+            var transaction7 = await multiplyFunction.SendTransactionAsync(addressFrom, gas, null, 7);
 
             var multiplyFunction2 = contract.GetFunction("multiply2");
             var callResult = await multiplyFunction2.CallAsync<int>(7, 7);
@@ -123,12 +117,9 @@ namespace Nethereum.Web3.Tests
 
             while (receiptTransaction == null)
             {
-                await Task.Delay(5000);
+                Thread.Sleep(100);
                 receiptTransaction = await transactions.GetTransactionReceipt.SendRequestAsync(transaction7);
             }
-
-            result = await web3.Miner.Stop.SendRequestAsync();
-            Assert.True(result, "Mining should have stopped");
 
             var logs = await eth.Filters.GetFilterChangesForEthNewFilter.SendRequestAsync(filterAllContract);    
             var eventLogsAll = await multipliedEvent.GetFilterChanges<EventMultiplied>(filterAll);

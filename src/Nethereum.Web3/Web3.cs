@@ -1,84 +1,110 @@
 ﻿using System;
-using Nethereum.JsonRpc.Client;
 using Nethereum.ABI.Util;
+using Nethereum.Contracts;
+using Nethereum.JsonRpc.Client;
+using Nethereum.RPC;
+using Nethereum.RPC.TransactionManagers;
+using Nethereum.Signer;
+using Nethereum.Util;
+using Nethereum.Web3.Accounts;
 using Newtonsoft.Json;
 
 namespace Nethereum.Web3
 {
     public class Web3
     {
-        public UnitConversion Convert { get; private set; }
-        public TransactionSigning OfflineTransactionSigning { get; private set; }
-        private AddressUtil addressUtil;
-
-        private Sha3Keccack sha3Keccack;
+        private static AddressUtil addressUtil = new AddressUtil();
+        private static Sha3Keccack sha3Keccack = new Sha3Keccack();
+        private static TransactionSigner transactionSigner = new TransactionSigner();
+        private static UnitConversion unitConversion = new UnitConversion();
 
         public Web3(IClient client)
         {
-            this.Client = client;
+            Client = client;
             InitialiseInnerServices();
+            IntialiseDefaultGasAndGasPrice();
+        }
+
+        private void IntialiseDefaultGasAndGasPrice()
+        {
+            this.TransactionManager.DefaultGas = Transaction.DEFAULT_GAS_LIMIT;
+            this.TransactionManager.DefaultGasPrice = Transaction.DEFAULT_GAS_PRICE;
+        }
+
+        public Web3(IAccount account, IClient client):this(client)
+        {
+            this.TransactionManager = account.TransactionManager;
+            this.TransactionManager.Client = this.Client;
         }
 
         public Web3(string url = @"http://localhost:8545/")
         {
-            IntialiseRpcClient(url);
+            IntialiseDefaultRpcClient(url);
             InitialiseInnerServices();
+            IntialiseDefaultGasAndGasPrice();
         }
 
-        private void InitialiseInnerServices()
+        public Web3(IAccount account, string url = @"http://localhost:8545/"):this(url)
         {
-            Eth = new Eth(Client);
-            Shh = new Shh(Client);
-            Net = new Net(Client);
-            Personal = new Personal(Client);
-            Miner = new Miner(Client);
-            DebugGeth = new DebugGeth(Client);
-            Admin = new Admin(Client);
-            Convert = new UnitConversion();
-            sha3Keccack = new Sha3Keccack();
-            OfflineTransactionSigning = new TransactionSigning();
-            addressUtil = new AddressUtil();
-
+            this.TransactionManager = account.TransactionManager;
+            this.TransactionManager.Client = this.Client;
         }
+
+        public ITransactionManager TransactionManager
+        {
+            get { return Eth.TransactionManager; }
+            set { Eth.TransactionManager = value; }
+        }
+
+        public static UnitConversion Convert { get { return unitConversion; } }
+
+        public static TransactionSigner OfflineTransactionSigner { get { return transactionSigner; } }
 
         public IClient Client { get; private set; }
 
-        public Eth Eth { get; private set; }
-        public Shh Shh { get; private set; }
+        public EthApiContractService Eth { get; private set; }
+        public ShhApiService Shh { get; private set; }
 
-        public Net Net { get; private set; }
+        public NetApiService Net { get; private set; }
 
-        public Personal Personal { get; private set; }
+        public PersonalApiService Personal { get; private set; }
 
-        public Admin Admin { get; private set; }
-
-        public DebugGeth DebugGeth { get; private set; }
-
-        public Miner Miner { get; private set; }
-
-        private void IntialiseRpcClient(string url)
+        public static string GetAddressFromPrivateKey(string privateKey)
         {
-            Client = new RpcClient(new Uri(url), null, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            return EthECKey.GetPublicAddress(privateKey);
         }
 
-        public string Sha3(string value)
+        public static bool IsChecksumAddress(string address)
+        {
+            return addressUtil.IsChecksumAddress(address);
+        }
+
+        public static string Sha3(string value)
         {
             return sha3Keccack.CalculateHash(value);
         }
 
-        public string ToChecksumAddress(string address)
+        public static string ToChecksumAddress(string address)
         {
-            return this.addressUtil.ConvertToChecksumAddress(address);
+            return addressUtil.ConvertToChecksumAddress(address);
         }
 
-        public bool IsChecksumAddress(string address)
+        public static string ToValid20ByteAddress(string address)
         {
-            return this.addressUtil.IsChecksumAddress(address);
+            return addressUtil.ConvertToValid20ByteAddress(address);
         }
 
-        public string ToValid20ByteAddress(string address)
+        protected virtual void InitialiseInnerServices()
         {
-            return this.addressUtil.ConvertToValid20ByteAddress(address);
+            Eth = new EthApiContractService(Client);
+            Shh = new ShhApiService(Client);
+            Net = new NetApiService(Client);
+            Personal = new PersonalApiService(Client);   
+        }
+
+        private void IntialiseDefaultRpcClient(string url)
+        {
+            Client = new RpcClient(new Uri(url));
         }
     }
 }

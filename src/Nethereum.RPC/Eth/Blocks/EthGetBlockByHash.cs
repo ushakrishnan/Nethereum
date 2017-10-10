@@ -1,5 +1,6 @@
+using System;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Core;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -76,14 +77,14 @@ namespace Nethereum.RPC.Eth.Blocks
         {
         }
 
-        public async Task<BlockWithTransactions> SendRequestAsync(string blockHash, object id = null)
+        public Task<BlockWithTransactions> SendRequestAsync(string blockHash, object id = null)
         {
-            return await base.SendRequestAsync(id, blockHash, true).ConfigureAwait(false);
+            return base.SendRequestAsync(id, blockHash.EnsureHexPrefix(), true);
         }
 
         public RpcRequest BuildRequest(string blockHash, object id = null)
         {
-            return base.BuildRequest(id, blockHash, true);
+            return base.BuildRequest(id, blockHash.EnsureHexPrefix(), true);
         }
     }
 
@@ -161,12 +162,14 @@ namespace Nethereum.RPC.Eth.Blocks
 
         public Task<BlockWithTransactionHashes> SendRequestAsync(string blockHash, object id = null)
         {
-            return base.SendRequestAsync(id, blockHash, false);
+            if (blockHash == null) throw new ArgumentNullException(nameof(blockHash));
+            return base.SendRequestAsync(id, blockHash.EnsureHexPrefix(), false);
         }
 
         public RpcRequest BuildRequest(string blockHash, object id = null)
         {
-            return base.BuildRequest(id, blockHash, false);
+            if (blockHash == null) throw new ArgumentNullException(nameof(blockHash));
+            return base.BuildRequest(id, blockHash.EnsureHexPrefix(), false);
         }
     }
 }

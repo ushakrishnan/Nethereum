@@ -1,5 +1,7 @@
 ﻿using System;
 using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.IpcClient;
+
 
 namespace Nethereum.Web3.Tests
 {
@@ -7,12 +9,13 @@ namespace Nethereum.Web3.Tests
     {
         public static IClient GetClient()
         {
-            //var client = new IpcClient("./geth.ipc");
-           // return client;
-            // live return new RpcClient(new Uri("https://eth2.augur.net"));
-            //return new RpcClient(new Uri("https://eth3.augur.net"));  //morden
-            return new RpcClient(new Uri("http://localhost:8545/"));
-            
+//#if NET462
+            var client = new IpcClient("geth.ipc");
+            return client;
+//#else      
+//           return new RpcClient(new Uri("http://localhost:8545/"));
+//#endif
+           
         }
     }
 }

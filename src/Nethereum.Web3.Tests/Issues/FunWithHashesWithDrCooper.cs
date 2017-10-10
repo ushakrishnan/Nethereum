@@ -27,7 +27,7 @@ namespace Nethereum.Web3.Tests.Issues
             var hash = "0x1c21348936d43dc62d853ff6238cff94e361f8dcee9fde6fd5fbfed9ff663150";
             var web3 = new Web3(ClientFactory.GetClient());
 
-            var sha3Hello = web3.Sha3(text);
+            var sha3Hello = Web3.Sha3(text);
             Assert.Equal(hash, "0x" + sha3Hello);
 
             var contractByteCode =
@@ -50,12 +50,10 @@ namespace Nethereum.Web3.Tests.Issues
             Assert.Equal(hash, "0x" + result.ToHex());
 
             var storeMyHash = contract.GetFunction("storeMyHash");
-            await gethTester.StartMining();
             await gethTester.UnlockAccount();
-            var txn = await storeMyHash.SendTransactionAsync(gethTester.Account, hash.HexToByteArray());
+            var gas = await storeMyHash.EstimateGasAsync(gethTester.Account, null, null, hash.HexToByteArray());
+            var txn = await storeMyHash.SendTransactionAsync(gethTester.Account, gas, null, hash.HexToByteArray());
             await gethTester.GetTransactionReceipt(txn);
-            await gethTester.StopMining();
-
 
             var myHashFuction = contract.GetFunction("myHash");
             result = await myHashFuction.CallAsync<byte[]>();

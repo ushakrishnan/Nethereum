@@ -16,9 +16,19 @@ namespace BuildProjectFile
 			stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.Web3", "Web3"));
             stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.StandardTokenEIP20", "EIP20"));
             stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.JsonRpc.Client", "NethereumJsonRpc"));
-			//stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
-			//stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));
-            //stringBuilder.Append(CreateOutputFolder("\\Nethereum.Maker\\Nethereum.Maker", "Maker"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.JsonRpc.RpcClient", "NethereumJsonRpcClient"));
+            stringBuilder.Append(CreateOutputFolder ("..\\src\\Nethereum.KeyStore", "KeyStore"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Quorum", "Quorum"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.ENS", "ENS"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Geth", "Geth"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Contracts", "Contracts"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Util", "Util"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Signer", "Signer"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.RLP", "RLP"));
+            stringBuilder.Append(CreateOutputFolder("..\\src\\Nethereum.Uport", "Uport"));
+
+            //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Core", "JsonRpc.Core"));
+            //stringBuilder.Append(CreateOutputFolder ("JsonRpc.Router\\src\\JsonRpc.Client", "JsonRpc.Client"));
             //GenerateFile("Nethereum-XS\\Nethereum - XS.csproj", fileTemplate1, fileTemplate2, stringBuilder.ToString());
             GenerateFile("Nethereum.Portable\\Nethereum.Portable.csproj", fileTemplatePortable1, fileTemplatePortable2, stringBuilder.ToString());
         }
@@ -95,7 +105,7 @@ namespace BuildProjectFile
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -103,7 +113,7 @@ namespace BuildProjectFile
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;PCL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -126,8 +136,8 @@ namespace BuildProjectFile
 </Project>";
 
 
-static string fileTemplate1 =
-@"<?xml version=""1.0"" encoding=""utf-8""?>
+        static string fileTemplate1 =
+        @"<?xml version=""1.0"" encoding=""utf-8""?>
 <Project DefaultTargets=""Build"" ToolsVersion=""4.0"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
   <PropertyGroup>
     <Configuration Condition="" '$(Configuration)' == '' "">Debug</Configuration>
