@@ -54,6 +54,18 @@ namespace Nethereum.JsonRpc.Client
                     .ConfigureAwait(false);
             HandleRpcError(response);
         }
+        
+        //ChainGenie update made to return RpcResponse.  Useful when response will be parsed response.result
+        //to get ABI information and contractBytecode while automating custom contract deployments
+        public async Task<RpcResponse> SendRequestAsyncCustom(RpcRequest request, string route = null)
+        {
+            var response =
+                await _innerRpcClient.SendRequestAsync(
+                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, (object[])request.RawParameters), route)
+                    .ConfigureAwait(false);
+            HandleRpcError(response);
+            return response;
+        }
 
         public override async Task SendRequestAsync(string method, string route = null, params object[] paramList)
         {
