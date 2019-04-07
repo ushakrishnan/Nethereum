@@ -1,58 +1,110 @@
-using EdjCase.JsonRpc.Client;
-using EdjCase.JsonRpc.Core;
-using Newtonsoft.Json;
 using System;
+using System.IO;
+using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Common.Logging;
+using Nethereum.JsonRpc.Client.RpcMessages;
+using Newtonsoft.Json;
 
 namespace Nethereum.JsonRpc.Client
 {
     public class RpcClient : ClientBase
     {
-        private readonly EdjCase.JsonRpc.Client.RpcClient _innerRpcClient;
+        private const int NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT = 60;
+        private readonly AuthenticationHeaderValue _authHeaderValue;
+        private readonly Uri _baseUrl;
+        private readonly HttpClientHandler _httpClientHandler;
+        private readonly ILog _log;
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private volatile bool _firstHttpClient;
+        private HttpClient _httpClient;
+        private HttpClient _httpClient2;
+        private DateTime _httpClientLastCreatedAt;
+        private readonly object _lockObject = new object();
 
         public RpcClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null,
-            JsonSerializerSettings jsonSerializerSettings = null)
+            JsonSerializerSettings jsonSerializerSettings = null, HttpClientHandler httpClientHandler = null, ILog log = null)
         {
-            if (jsonSerializerSettings == null)
+            _baseUrl = baseUrl;
+
+            if (authHeaderValue == null)
             {
-                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
+                authHeaderValue = UserAuthentication.FromUri(baseUrl)?.GetBasicAuthenticationHeaderValue();
             }
-            this._innerRpcClient = new EdjCase.JsonRpc.Client.RpcClient(baseUrl, authHeaderValue, jsonSerializerSettings);
+
+            _authHeaderValue = authHeaderValue;
+            if (jsonSerializerSettings == null)
+                jsonSerializerSettings = DefaultJsonSerializerSettingsFactory.BuildDefaultJsonSerializerSettings();
+            _jsonSerializerSettings = jsonSerializerSettings;
+            _httpClientHandler = httpClientHandler;
+            _log = log;
+            CreateNewHttpClient();
         }
 
-        protected override async Task<T> SendInnerRequestAync<T>(RpcRequest request, string route = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
-            var response =
-                await _innerRpcClient.SendRequestAsync(
-                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, (object[])request.RawParameters), route)
-                    .ConfigureAwait(false);
-            HandleRpcError(response);
-            return response.GetResult<T>();
+            var logger = new RpcLogger(_log);
+            try
+            {
+                var httpClient = GetOrCreateHttpClient();
+                var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
+                var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(ConnectionTimeout);
+
+                logger.LogRequest(rpcRequestJson);
+
+                var httpResponseMessage = await httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
+                httpResponseMessage.EnsureSuccessStatusCode();
+
+                var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                using (var streamReader = new StreamReader(stream))
+                using (var reader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.Create(_jsonSerializerSettings);
+                    var message =  serializer.Deserialize<RpcResponseMessage>(reader);
+
+                    logger.LogResponse(message);
+                    
+                    return message;
+                }
+            }
+            catch(TaskCanceledException ex)
+            {
+                 var exception = new RpcClientTimeoutException($"Rpc timeout after {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
+                 logger.LogException(exception);
+                 throw exception;
+            }
+            catch (Exception ex)
+            {
+                var exception = new RpcClientUnknownException("Error occurred when trying to send rpc requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
+            }
         }
 
-        protected override async Task<T> SendInnerRequestAync<T>(string method, string route = null,
-            params object[] paramList)
+       
+
+        private HttpClient GetOrCreateHttpClient()
         {
-            var response = await _innerRpcClient.SendRequestAsync(method, route, paramList).ConfigureAwait(false);
-            HandleRpcError(response);
-            return response.GetResult<T>();
+            lock (_lockObject)
+            {
+                var timeSinceCreated = DateTime.UtcNow - _httpClientLastCreatedAt;
+                if (timeSinceCreated.TotalSeconds > NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT)
+                    CreateNewHttpClient();
+                return GetClient();
+            }
         }
 
-        private void HandleRpcError(RpcResponse response)
+        private HttpClient GetClient()
         {
-            if (response.HasError)
-                throw new RpcResponseException(new RpcError(response.Error.Code, response.Error.Message,
-                    response.Error.Data));
-        }
-
-        public override async Task SendRequestAsync(RpcRequest request, string route = null)
-        {
-            var response =
-                await _innerRpcClient.SendRequestAsync(
-                        new EdjCase.JsonRpc.Core.RpcRequest(request.Id, request.Method, (object[])request.RawParameters), route)
-                    .ConfigureAwait(false);
-            HandleRpcError(response);
+            lock (_lockObject)
+            {
+                return _firstHttpClient ? _httpClient : _httpClient2;
+            }
         }
         
         //ChainGenie update made to return RpcResponse.  Useful when response will be parsed response.result
@@ -67,10 +119,24 @@ namespace Nethereum.JsonRpc.Client
             return response;
         }
 
-        public override async Task SendRequestAsync(string method, string route = null, params object[] paramList)
+        private void CreateNewHttpClient()
         {
-            var response = await _innerRpcClient.SendRequestAsync(method, route, paramList).ConfigureAwait(false);
-            HandleRpcError(response);
+            var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
+            httpClient.BaseAddress = _baseUrl;
+            _httpClientLastCreatedAt = DateTime.UtcNow;
+            if (_firstHttpClient)
+                lock (_lockObject)
+                {
+                    _firstHttpClient = false;
+                    _httpClient2 = httpClient;
+                }
+            else
+                lock (_lockObject)
+                {
+                    _firstHttpClient = true;
+                    _httpClient = httpClient;
+                }
         }
     }
 }

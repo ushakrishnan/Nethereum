@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
- 
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json.Linq;
 
@@ -9,7 +8,7 @@ namespace Nethereum.Geth.RPC.Debug
     ///     Similar to debug_traceBlock, traceBlockByNumber accepts a block number and will replay the block that is already
     ///     present in the database.
     /// </Summary>
-    public class DebugTraceBlockByNumber : RpcRequestResponseHandler<JObject>
+    public class DebugTraceBlockByNumber : RpcRequestResponseHandler<JObject>, IDebugTraceBlockByNumber
     {
         public DebugTraceBlockByNumber(IClient client) : base(client, ApiMethods.debug_traceBlockByNumber.ToString())
         {

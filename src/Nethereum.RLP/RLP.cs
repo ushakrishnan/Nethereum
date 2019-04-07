@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.RLP
@@ -103,25 +104,20 @@ namespace Nethereum.RLP
             return BitConverter.ToInt32(bytes, 0);
         }
 
-        /// <summary>
-        /// Parses byte[] message into RLP items
-        /// </summary>
-        /// <param name="msgData">raw RLP data </param>
-        /// <returns> RlpList: outcome of recursive RLP structure </returns>
-        public static RLPCollection Decode(byte[] msgData)
+        public static IRLPElement Decode(byte[] msgData)
         {
             var rlpCollection = new RLPCollection();
             Decode(msgData, 0, 0, msgData.Length, 1, rlpCollection);
-            return rlpCollection;
+            return rlpCollection[0];
         }
 
         /// <summary>
-        /// Decodes a message from a starting point to an end point
+        ///     Decodes a message from a starting point to an end point
         /// </summary>
         public static void Decode(byte[] msgData, int level, int startPosition,
             int endPosition, int levelToIndex, RLPCollection rlpCollection)
         {
-            if ((msgData == null) || (msgData.Length == 0))
+            if (msgData == null || msgData.Length == 0)
                 return;
 
             var currentData = new byte[endPosition - startPosition];
@@ -133,41 +129,40 @@ namespace Nethereum.RLP
 
                 while (currentPosition < endPosition)
                 {
-                  
                     if (IsListBiggerThan55Bytes(msgData, currentPosition))
                     {
-                        currentPosition = ProcessListBiggerThan55Bytes(msgData, level, levelToIndex, rlpCollection, currentPosition);
+                        currentPosition = ProcessListBiggerThan55Bytes(msgData, level, levelToIndex, rlpCollection,
+                            currentPosition);
                         continue;
                     }
 
                     if (IsListLessThan55Bytes(msgData, currentPosition))
                     {
-                        currentPosition = ProcessListLessThan55Bytes(msgData, level, levelToIndex, rlpCollection, currentPosition);
+                        currentPosition = ProcessListLessThan55Bytes(msgData, level, levelToIndex, rlpCollection,
+                            currentPosition);
                         continue;
                     }
-                   
+
                     if (IsItemBiggerThan55Bytes(msgData, currentPosition))
                     {
                         currentPosition = ProcessItemBiggerThan55Bytes(msgData, rlpCollection, currentPosition);
                         continue;
                     }
-                    
+
                     if (IsItemLessThan55Bytes(msgData, currentPosition))
                     {
                         currentPosition = ProcessItemLessThan55Bytes(msgData, rlpCollection, currentPosition);
                         continue;
                     }
-                   
+
                     if (IsNullItem(msgData, currentPosition))
                     {
                         currentPosition = ProcessNullItem(rlpCollection, currentPosition);
                         continue;
                     }
-                    
+
                     if (IsSigleByteItem(msgData, currentPosition))
-                    {
                         currentPosition = ProcessSingleByteItem(msgData, rlpCollection, currentPosition);
-                    }
                 }
             }
             catch (Exception ex)
@@ -178,8 +173,8 @@ namespace Nethereum.RLP
         }
 
         /// <summary>
-        /// data[0] - 0xF7 = how many next bytes allocated
-        /// for the length of the list
+        ///     data[0] - 0xF7 = how many next bytes allocated
+        ///     for the length of the list
         /// </summary>
         private static bool IsListBiggerThan55Bytes(byte[] msgData, int currentPosition)
         {
@@ -188,8 +183,8 @@ namespace Nethereum.RLP
 
         private static bool IsListLessThan55Bytes(byte[] msgData, int currentPosition)
         {
-            return (msgData[currentPosition] >= OFFSET_SHORT_LIST)
-                   && (msgData[currentPosition] <= OFFSET_LONG_LIST);
+            return msgData[currentPosition] >= OFFSET_SHORT_LIST
+                   && msgData[currentPosition] <= OFFSET_LONG_LIST;
         }
 
         // It's an item with a payload more than 55 bytes
@@ -197,15 +192,15 @@ namespace Nethereum.RLP
         // the length of the string
         private static bool IsItemBiggerThan55Bytes(byte[] msgData, int currentPosition)
         {
-            return (msgData[currentPosition] > OFFSET_LONG_ITEM)
-                   && (msgData[currentPosition] < OFFSET_SHORT_LIST);
+            return msgData[currentPosition] > OFFSET_LONG_ITEM
+                   && msgData[currentPosition] < OFFSET_SHORT_LIST;
         }
 
         // data[0] - 0x80 == length of the item
         private static bool IsItemLessThan55Bytes(byte[] msgData, int currentPosition)
         {
-            return (msgData[currentPosition] > OFFSET_SHORT_ITEM)
-                   && (msgData[currentPosition] <= OFFSET_LONG_ITEM);
+            return msgData[currentPosition] > OFFSET_SHORT_ITEM
+                   && msgData[currentPosition] <= OFFSET_LONG_ITEM;
         }
 
         private static bool IsNullItem(byte[] msgData, int currentPosition)
@@ -253,7 +248,8 @@ namespace Nethereum.RLP
             return currentPosition;
         }
 
-        private static int ProcessItemBiggerThan55Bytes(byte[] msgData, RLPCollection rlpCollection, int currentPosition)
+        private static int ProcessItemBiggerThan55Bytes(byte[] msgData, RLPCollection rlpCollection,
+            int currentPosition)
         {
             var lengthOfLength = (byte) (msgData[currentPosition] - OFFSET_LONG_ITEM);
             var length = CalculateLength(lengthOfLength, msgData, currentPosition);
@@ -338,7 +334,7 @@ namespace Nethereum.RLP
                 return new[] {OFFSET_SHORT_ITEM};
             if (IsSingleZero(srcData))
                 return srcData;
-            if ((srcData.Length == 1) && (srcData[0] < 0x80))
+            if (srcData.Length == 1 && srcData[0] < 0x80)
                 return srcData;
             if (srcData.Length < SIZE_THRESHOLD)
             {
@@ -363,7 +359,7 @@ namespace Nethereum.RLP
                 }
                 var lenBytes = new byte[byteNum];
                 for (var i = 0; i < byteNum; ++i)
-                    lenBytes[byteNum - 1 - i] = (byte) (srcData.Length >> (8*i));
+                    lenBytes[byteNum - 1 - i] = (byte) (srcData.Length >> (8 * i));
                 // first byte = F7 + bytes.length
                 var data = new byte[srcData.Length + 1 + byteNum];
                 Array.Copy(srcData, 0, data, 1 + byteNum, srcData.Length);
@@ -372,6 +368,11 @@ namespace Nethereum.RLP
 
                 return data;
             }
+        }
+
+        public static byte[] EncodeElementsAndList(params byte[][] dataItems)
+        {
+            return EncodeList(dataItems.Select(EncodeElement).ToArray());
         }
 
         public static byte[] EncodeList(params byte[][] items)
@@ -413,7 +414,7 @@ namespace Nethereum.RLP
 
                 var lenBytes = new byte[byteNum];
                 for (var i = 0; i < byteNum; ++i)
-                    lenBytes[byteNum - 1 - i] = (byte) (tmpLength >> (8*i));
+                    lenBytes[byteNum - 1 - i] = (byte) (tmpLength >> (8 * i));
                 // first byte = F7 + bytes.length
                 data = new byte[1 + lenBytes.Length + totalLength];
 
@@ -434,21 +435,21 @@ namespace Nethereum.RLP
 
         public static bool IsNullOrZeroArray(byte[] array)
         {
-            return (array == null) || (array.Length == 0);
+            return array == null || array.Length == 0;
         }
 
         public static bool IsSingleZero(byte[] array)
         {
-            return (array.Length == 1) && (array[0] == 0);
+            return array.Length == 1 && array[0] == 0;
         }
 
         private static int CalculateLength(int lengthOfLength, byte[] msgData, int pos)
         {
-            var pow = (byte)(lengthOfLength - 1);
+            var pow = (byte) (lengthOfLength - 1);
             var length = 0;
             for (var i = 1; i <= lengthOfLength; ++i)
             {
-                length += msgData[pos + i] << (8*pow);
+                length += msgData[pos + i] << (8 * pow);
                 pow--;
             }
             return length;

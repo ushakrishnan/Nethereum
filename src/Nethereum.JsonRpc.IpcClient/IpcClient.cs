@@ -3,28 +3,24 @@ using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Threading.Tasks;
-using EdjCase.JsonRpc.Client;
-using EdjCase.JsonRpc.Core;
 using Nethereum.JsonRpc.Client;
 using Newtonsoft.Json;
-using RpcError = Nethereum.JsonRpc.Client.RpcError;
-using RpcRequest = Nethereum.JsonRpc.Client.RpcRequest;
-using System.Net.Sockets;
-using System.Net;
-using System.Diagnostics;
-using Newtonsoft.Json.Linq;
+using Common.Logging;
+using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.JsonRpc.IpcClient
 {
     public class IpcClient : IpcClientBase
     {
         private readonly object _lockingObject = new object();
+        private readonly ILog _log;
 
         private NamedPipeClientStream _pipeClient;
+      
 
-        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null) : base(ipcPath, jsonSerializerSettings)
+        public IpcClient(string ipcPath, JsonSerializerSettings jsonSerializerSettings = null, ILog log = null) : base(ipcPath, jsonSerializerSettings)
         {
-
+            _log = log;
         }
 
         private NamedPipeClientStream GetPipeClient()
@@ -34,8 +30,12 @@ namespace Nethereum.JsonRpc.IpcClient
                 if (_pipeClient == null || !_pipeClient.IsConnected)
                 {
                     _pipeClient = new NamedPipeClientStream(IpcPath);
-                    _pipeClient.Connect();
+                    _pipeClient.Connect((int)ConnectionTimeout.TotalMilliseconds);
                 }
+            }
+            catch (TimeoutException ex)
+            {
+                throw new RpcClientTimeoutException($"Rpc timeout afer {ConnectionTimeout.TotalMilliseconds} milliseconds", ex);
             }
             catch
             {
@@ -52,7 +52,7 @@ namespace Nethereum.JsonRpc.IpcClient
             int bytesRead = 0;
             if (Task.Run(async () =>
                     bytesRead = await client.ReadAsync(buffer, 0, buffer.Length)
-                ).Wait(2000))
+                ).Wait(ForceCompleteReadTotalMiliseconds))
             {
                 return bytesRead;
             }
@@ -87,15 +87,16 @@ namespace Nethereum.JsonRpc.IpcClient
             return memoryStream;
         }
 
-        protected override async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
         {
+            var logger = new RpcLogger(_log);
             try
             {
                 lock (_lockingObject)
                 {
                     var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                     var requestBytes = Encoding.UTF8.GetBytes(rpcRequestJson);
-
+                    logger.LogRequest(rpcRequestJson);
                     GetPipeClient().Write(requestBytes, 0, requestBytes.Length);
 
                     using (var memoryData = ReceiveFullResponse(GetPipeClient()))
@@ -105,17 +106,18 @@ namespace Nethereum.JsonRpc.IpcClient
                         using (JsonTextReader reader = new JsonTextReader(streamReader))
                         {
                             var serializer = JsonSerializer.Create(JsonSerializerSettings);
-                            return serializer.Deserialize<TResponse>(reader);
+                            var message = serializer.Deserialize<RpcResponseMessage>(reader);
+                            logger.LogResponse(message);
+                            return message;
                         }
-                        throw new RpcClientUnknownException(
-                                     $"Unable to parse response from the ipc server");
                     }
                 }
-
             }
-            catch (Exception ex) when (!(ex is RpcClientException) && !(ex is RpcException))
+            catch (Exception ex)
             {
-                throw new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+                var exception = new RpcClientUnknownException("Error occurred when trying to send ipc requests(s)", ex);
+                logger.LogException(exception);
+                throw exception;
             }
         }
 

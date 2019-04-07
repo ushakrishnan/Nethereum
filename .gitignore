@@ -28,7 +28,7 @@ bld/
 devChainRPCTests/
 testchain/clique/devChain/geth
 testchain/devChain/geth
-geth.exe
+testchain/parity poa/parity0/chains
 
 
 # Visual Studio 2015 cache/options directory

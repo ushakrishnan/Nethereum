@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
+using Nethereum.Generator.Console.Commands;
 
 namespace Nethereum.Generator.Console
 {
@@ -6,8 +7,7 @@ namespace Nethereum.Generator.Console
     {
         public App()
         {
-            Commands.Add(new GenerateServiceCommand());
-            Commands.Add(new GenerateSampleServiceCommand());
+            Commands.Add(new GenerateCommand());
             HelpOption("-h | -? | --help");
         }
     }

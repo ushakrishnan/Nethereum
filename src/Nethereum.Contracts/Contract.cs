@@ -1,9 +1,6 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.ABI.JsonDeserialisation;
-using Nethereum.ABI.Model;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
@@ -16,17 +13,26 @@ namespace Nethereum.Contracts
         public Contract(EthApiService eth, string abi, string contractAddress)
         {
             Eth = eth;
-            ContractABI = new ABIDeserialiser().DeserialiseContract(abi);
-            Address = contractAddress;
+            ContractBuilder = new ContractBuilder(abi, contractAddress);
         }
 
-        private EthNewFilter EthNewFilter => Eth.Filters.NewFilter;
+        public Contract(EthApiService eth, Type contractMessageType, string contractAddress)
+        {
+            Eth = eth;
+            ContractBuilder = new ContractBuilder(contractMessageType, contractAddress);
+        }
 
-        public ContractABI ContractABI { get; set; }
+        public Contract(EthApiService eth, Type[] contractMessagesTypes, string contractAddress)
+        {
+            Eth = eth;
+            ContractBuilder = new ContractBuilder(contractMessagesTypes, contractAddress);
+        }
 
-        public BlockParameter DefaultBlock { get; set; }
+        private IEthNewFilter EthNewFilter => Eth.Filters.NewFilter;
 
-        public string Address { get; set; }
+        public ContractBuilder ContractBuilder { get; set; }
+
+        public string Address => ContractBuilder.Address;
 
         public EthApiService Eth { get; }
 
@@ -38,46 +44,37 @@ namespace Nethereum.Contracts
 
         public NewFilterInput GetDefaultFilterInput(BlockParameter fromBlock = null, BlockParameter toBlock = null)
         {
-            var ethFilterInput = new NewFilterInput
-            {
-                FromBlock = fromBlock,
-                ToBlock = toBlock ?? BlockParameter.CreateLatest(),
-                Address = new[] {Address}
-            };
-            return ethFilterInput;
+            return ContractBuilder.GetDefaultFilterInput(fromBlock, toBlock);
         }
 
         public Event GetEvent(string name)
         {
-            return new Event(this, GetEventAbi(name));
+            return new Event(this, ContractBuilder.GetEventAbi(name));
+        }
+
+        public Event<T> GetEvent<T>() where T: IEventDTO, new()
+        {
+            return new Event<T>(this);
         }
 
         public Function<TFunction> GetFunction<TFunction>()
         {
-            var function = FunctionAttribute.GetAttribute<TFunction>();
-            if (function == null) throw new Exception("Invalid TFunction required a Function Attribute");
-            return new Function<TFunction>(this, GetFunctionAbi(function.Name));
+            return new Function<TFunction>(this, GetFunctionBuilder<TFunction>());
         }
 
         public Function GetFunction(string name)
         {
-            return new Function(this, GetFunctionAbi(name));
+            return new Function(this, GetFunctionBuilder(name));
         }
 
-        private EventABI GetEventAbi(string name)
+        private FunctionBuilder GetFunctionBuilder(string name)
         {
-            if (ContractABI == null) throw new Exception("Contract abi not initialised");
-            var eventAbi = ContractABI.Events.FirstOrDefault(x => x.Name == name);
-            if (eventAbi == null) throw new Exception("Event not found");
-            return eventAbi;
+            return ContractBuilder.GetFunctionBuilder(name);
         }
 
-        private FunctionABI GetFunctionAbi(string name)
+        private FunctionBuilder<TFunctionInput> GetFunctionBuilder<TFunctionInput>()
         {
-            if (ContractABI == null) throw new Exception("Contract abi not initialised");
-            var functionAbi = ContractABI.Functions.FirstOrDefault(x => x.Name == name);
-            if (functionAbi == null) throw new Exception("Function not found:" + name);
-            return functionAbi;
+            return ContractBuilder.GetFunctionBuilder<TFunctionInput>();
         }
     }
 }
