@@ -88,7 +88,7 @@ cd Nethereum.Uport*
 CALL :restorepack
 cd ..
 
-cd Nethereum.HdWallet*
+cd Nethereum.HDWallet
 CALL :restorepack
 cd ..
 
@@ -105,6 +105,26 @@ CALL :restorepack
 cd..
 
 cd Nethereum.RPC.Reactive
+CALL :restorepack
+cd..
+
+cd Nethereum.Model
+CALL :restorepack
+cd..
+
+cd Nethereum.StandardNonFungibleTokenERC721
+CALL :restorepack
+cd..
+
+cd Nethereum.Pantheon
+CALL :restorepack
+cd..
+
+cd Nethereum.RSK
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainProcessing
 CALL :restorepack
 cd..
 

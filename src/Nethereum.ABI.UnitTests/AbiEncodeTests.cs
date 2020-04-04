@@ -1,5 +1,7 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.JsonDeserialisation;
 using Nethereum.Hex.HexConvertors.Extensions;
+using System.Linq;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
@@ -16,6 +18,16 @@ namespace Nethereum.ABI.UnitTests
                 new ABIValue("string", "world"));
 
             Assert.Equal("0x" + paramsEncoded, result.ToHex(true));
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeMultipleValuesUsingDefaultConvertors()
+        {
+            var paramsEncoded =
+                "000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000131000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000013300000000000000000000000000000000000000000000000000000000000000";
+            var abiEncode = new ABIEncode();
+            var encoded = abiEncode.GetABIEncoded("1", "2", "3").ToHex();
+            Assert.Equal(paramsEncoded, encoded);
         }
 
         [Fact]

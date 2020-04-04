@@ -23,9 +23,11 @@ declare module Nethereum {
             GenerateAllMessagesFileAndService(): Core.GeneratedFile[];
             GenerateAllMessages(): Core.GeneratedFile;
             GenerateAll(): Core.GeneratedFile[];
-            GenerateService(): Core.GeneratedFile;
+            GenerateService(singleMessagesFile?: boolean): Core.GeneratedFile;
             GenerateAllCQSMessages(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GenerateAllFunctionDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
+            GenerateAllStructs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
+            GetAllStructTypeGenerators(): System.Collections.Generic.List$1<DTOs.StructTypeGenerator>;
             GetAllFunctionDTOsGenerators(): System.Collections.Generic.List$1<DTOs.FunctionOutputDTOGenerator>;
             GenerateAllEventDTOs(): System.Collections.Generic.List$1<Core.GeneratedFile>;
             GetllEventDTOGenerators(): System.Collections.Generic.List$1<DTOs.EventDTOGenerator>;
@@ -86,6 +88,7 @@ declare module Nethereum {
                 GetPropertyName$1(parameterDirection: ParameterDirection): string;
                 GetVariableName$1(name: string, order: int): string;
                 GetPropertyName$2(name: string, order: int, parameterDirection?: ParameterDirection): string;
+                GetStructTypeClassName(): string;
             }
             export interface ParameterABIModelTypeFunc extends TypeFunction {
                 (): ParameterABIModelTypeFunc;
@@ -124,7 +127,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.Core.ABITypeToDotNetTypeBase
             export interface ABITypeToDotNetTypeBase extends System.Object, ITypeConvertor {
-                Convert(typeName: string, outputArrayAsList?: boolean): string;
+                Convert(typeName: string, dotnetClassName?: string, outputArrayAsList?: boolean): string;
             }
             export interface ABITypeToDotNetTypeBaseTypeFunc extends TypeFunction {
                 (): ABITypeToDotNetTypeBaseTypeFunc;
@@ -156,6 +159,8 @@ declare module Nethereum {
 
             // Nethereum.Generators.Core.ClassGeneratorBase<TClassTemplate, TClassModel>
             export interface ClassGeneratorBase$2<TClassTemplate, TClassModel> extends System.Object, IFileGenerator, IGenerator, IClassGenerator {
+                get_ClassModel(): TClassModel;
+                set_ClassModel(value: TClassModel): void;
                 GenerateFileContent$1(outputPath: string): GeneratedFile;
                 GenerateFileContent(): string;
                 GetFileName(): string;
@@ -290,7 +295,7 @@ declare module Nethereum {
 
             // Nethereum.Generators.Core.ITypeConvertor
             export interface ITypeConvertor {
-                Nethereum$Generators$Core$ITypeConvertor$Convert(typeName: string, outputArrayAsList?: boolean): string;
+                Nethereum$Generators$Core$ITypeConvertor$Convert(typeName: string, dotnetClassName: string, outputArrayAsList?: boolean): string;
             }
             const ITypeConvertor: TypeFunction;
 
@@ -506,6 +511,8 @@ declare module Nethereum {
                 set_Constructor(value: ConstructorABI): void;
                 get_Events(): EventABI[];
                 set_Events(value: EventABI[]): void;
+                get_Structs(): StructABI[];
+                set_Structs(value: StructABI[]): void;
             }
             export interface ContractABITypeFunc extends TypeFunction {
                 (): ContractABITypeFunc;
@@ -550,17 +557,34 @@ declare module Nethereum {
 
             // Nethereum.Generators.Model.ParameterABI
             export interface ParameterABI extends Core.Parameter {
+                get_StructType(): string;
+                set_StructType(value: string): void;
                 get_Indexed(): boolean;
                 set_Indexed(value: boolean): void;
             }
             export interface ParameterABITypeFunc extends TypeFunction {
                 (): ParameterABITypeFunc;
                 prototype: ParameterABI;
-                ctor$1: { new (type: string, name?: string, order?: int): ParameterABI; };
+                ctor$1: { new (type: string, name?: string, order?: int, structType?: string): ParameterABI; };
                 new (type: string, order: int): ParameterABI;
                 ctor: { new (type: string, order: int): ParameterABI; };
             }
             const ParameterABI: ParameterABITypeFunc;
+
+            // Nethereum.Generators.Model.StructABI
+            export interface StructABI extends System.Object, Core.IMessage$1<ParameterABI> {
+                get_InputParameters(): ParameterABI[];
+                set_InputParameters(value: ParameterABI[]): void;
+                get_Name(): string;
+                set_Name(value: string): void;
+            }
+            export interface StructABITypeFunc extends TypeFunction {
+                (): StructABITypeFunc;
+                prototype: StructABI;
+                new (name: string): StructABI;
+                ctor: { new (name: string): StructABI; };
+            }
+            const StructABI: StructABITypeFunc;
         }
         module Service {
             // Nethereum.Generators.Service.AllMessagesGenerator
@@ -1007,6 +1031,30 @@ declare module Nethereum {
             }
             const FunctionOutputDTOModel: FunctionOutputDTOModelTypeFunc;
 
+            // Nethereum.Generators.DTOs.StructTypeGenerator
+            export interface StructTypeGenerator extends Core.ClassGeneratorBase$2<CQS.ClassTemplateBase$1<StructTypeModel>, StructTypeModel>, Core.IFileGenerator, Core.IGenerator, Core.IClassGenerator {
+                InitialiseTemplate(codeGenLanguage: Core.CodeGenLanguage): void;
+            }
+            export interface StructTypeGeneratorTypeFunc extends TypeFunction {
+                (): StructTypeGeneratorTypeFunc;
+                prototype: StructTypeGenerator;
+                new (structTypeABI: Model.StructABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): StructTypeGenerator;
+                ctor: { new (structTypeABI: Model.StructABI, namespace: string, codeGenLanguage: Core.CodeGenLanguage): StructTypeGenerator; };
+            }
+            const StructTypeGenerator: StructTypeGeneratorTypeFunc;
+
+            // Nethereum.Generators.DTOs.StructTypeModel
+            export interface StructTypeModel extends Core.TypeMessageModel, Core.IClassModel, Core.IFileModel {
+                get_StructTypeABI(): Model.StructABI;
+            }
+            export interface StructTypeModelTypeFunc extends TypeFunction {
+                (): StructTypeModelTypeFunc;
+                prototype: StructTypeModel;
+                new (structTypeABI: Model.StructABI, namespace: string): StructTypeModel;
+                ctor: { new (structTypeABI: Model.StructABI, namespace: string): StructTypeModel; };
+            }
+            const StructTypeModel: StructTypeModelTypeFunc;
+
             // Nethereum.Generators.DTOs.EventDTOCSharpTemplate
             export interface EventDTOCSharpTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
                 GetPartialMainClass(): string;
@@ -1061,6 +1109,18 @@ declare module Nethereum {
             }
             const ParameterABIFunctionDTOCSharpTemplate: ParameterABIFunctionDTOCSharpTemplateTypeFunc;
 
+            // Nethereum.Generators.DTOs.StructTypeCSharpTemplate
+            export interface StructTypeCSharpTemplate extends CQS.ClassTemplateBase$1<StructTypeModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
+            }
+            export interface StructTypeCSharpTemplateTypeFunc extends TypeFunction {
+                (): StructTypeCSharpTemplateTypeFunc;
+                prototype: StructTypeCSharpTemplate;
+                new (model: StructTypeModel): StructTypeCSharpTemplate;
+                ctor: { new (model: StructTypeModel): StructTypeCSharpTemplate; };
+            }
+            const StructTypeCSharpTemplate: StructTypeCSharpTemplateTypeFunc;
+
             // Nethereum.Generators.DTOs.EventDTOFSharpTemplate
             export interface EventDTOFSharpTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
             }
@@ -1100,6 +1160,10 @@ declare module Nethereum {
             export interface ParameterABIFunctionDTOFSharpTemplate extends System.Object {
                 GenerateAllProperties(parameters: Model.ParameterABI[]): string;
                 GenerateProperty(parameter: Model.ParameterABI): string;
+                GenerateAllFunctionParameters(parameters: Model.ParameterABI[]): string;
+                GenerateFunctionParameter(parameter: Model.ParameterABI): string;
+                GenerateAssigmentFunctionParametersToProperties(parameters: Model.ParameterABI[], objectName: string, spacing: string): string;
+                GenerateAssigmentFunctionParameterToProperty(parameter: Model.ParameterABI, objectName: string, spacing: string): string;
             }
             export interface ParameterABIFunctionDTOFSharpTemplateTypeFunc extends TypeFunction {
                 (): ParameterABIFunctionDTOFSharpTemplateTypeFunc;
@@ -1108,6 +1172,17 @@ declare module Nethereum {
                 ctor: { new (): ParameterABIFunctionDTOFSharpTemplate; };
             }
             const ParameterABIFunctionDTOFSharpTemplate: ParameterABIFunctionDTOFSharpTemplateTypeFunc;
+
+            // Nethereum.Generators.DTOs.StructTypeFSharpTemplate
+            export interface StructTypeFSharpTemplate extends CQS.ClassTemplateBase$1<StructTypeModel>, Core.IClassTemplate {
+            }
+            export interface StructTypeFSharpTemplateTypeFunc extends TypeFunction {
+                (): StructTypeFSharpTemplateTypeFunc;
+                prototype: StructTypeFSharpTemplate;
+                new (model: StructTypeModel): StructTypeFSharpTemplate;
+                ctor: { new (model: StructTypeModel): StructTypeFSharpTemplate; };
+            }
+            const StructTypeFSharpTemplate: StructTypeFSharpTemplateTypeFunc;
 
             // Nethereum.Generators.DTOs.EventDTOVbTemplate
             export interface EventDTOVbTemplate extends CQS.ClassTemplateBase$1<EventDTOModel>, Core.IClassTemplate {
@@ -1162,6 +1237,18 @@ declare module Nethereum {
                 ctor: { new (): ParameterABIFunctionDTOVbTemplate; };
             }
             const ParameterABIFunctionDTOVbTemplate: ParameterABIFunctionDTOVbTemplateTypeFunc;
+
+            // Nethereum.Generators.DTOs.StructTypeVbTemplate
+            export interface StructTypeVbTemplate extends CQS.ClassTemplateBase$1<StructTypeModel>, Core.IClassTemplate {
+                GetPartialMainClass(): string;
+            }
+            export interface StructTypeVbTemplateTypeFunc extends TypeFunction {
+                (): StructTypeVbTemplateTypeFunc;
+                prototype: StructTypeVbTemplate;
+                new (model: StructTypeModel): StructTypeVbTemplate;
+                ctor: { new (model: StructTypeModel): StructTypeVbTemplate; };
+            }
+            const StructTypeVbTemplate: StructTypeVbTemplateTypeFunc;
         }
         module XUnit {
             // Nethereum.Generators.XUnit.SimpleTestGenerator

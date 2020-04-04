@@ -12,9 +12,13 @@ CI dev packages: [![MyGet Pre Release](https://img.shields.io/myget/nethereum/vp
 
 Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public or permissioned like Geth, [Parity](https://www.parity.io/) or [Quorum](https://www.jpmorgan.com/global/Quorum).
 
-Nethereum is developed targeting netstandard 1.1, net451 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, Xbox, hololens and windows IoT.
+Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 2.1, netcore 3.1, net451 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, Xbox, hololens and windows IoT.
 
-Upcoming releases will include functionalities such as [DevP2P](https://github.com/ethereum/devp2p), [Plasma](https://plasma.io/plasma.pdf) and Micro-Payments.
+# Nethereum Playground. Try Nethereum now in your browser.
+Go to http://playground.nethereum.com to browse and execute all the different samples on how to use Nethereum directly in your browser. 
+The same version is hosted in IPFS at http://playground.nethereum.eth.link/ or the same https://gateway.pinata.cloud/ipfs/QmPgWmX3HsxCBCDVv8adEhLzeJd2VstcyGh1T9ipKrvU4Y/
+
+[![Nethereum Playground](screenshots/playground.png)](http://playground.nethereum.com)
 
 ## Issues, Requests and help
 
@@ -23,7 +27,7 @@ Please join the chat at:  [![Join the chat at https://gitter.im/juanfranblanco/E
 We should be able to answer there any simple queries, general comments or requests, everyone is welcome. In a similar feel free to raise any issue or pull request.
 
 ## Documentation
-The documentation and guides can be found at [Read the docs](https://nethereum.readthedocs.io/en/latest/). For live examples you can check the workbooks project [Nethereum.Workbooks](https://github.com/Nethereum/Nethereum.Workbooks/blob/master/docs/index.md) 
+The documentation and guides can be found at [Read the docs](https://nethereum.readthedocs.io/en/latest/). 
 
 ## Features
 
@@ -137,14 +141,16 @@ Note: IPC is supported for Windows, Unix and Linux but is only available using N
 |[Nethereum Windows wallet sample](https://github.com/Nethereum/Nethereum.SimpleWindowsWallet) | Windows forms wallet sample providing the core functionality for Loading accounts from different mediums, Ether transfer, Standard token interaction. This is going to be the basis for the future cross-platform wallet / dapp |
 [Nethereum Windows wallet sample](https://github.com/Nethereum/Nethereum.SimpleWindowsWallet) | Windows forms wallet sample providing the core functionality for Loading accounts from different mediums, Ether transfer, Standard token interaction. This is going to be the basis for the future cross-platform wallet / dapp |
 [Blazor/Blockchain Explorer](https://github.com/Nethereum/NethereumBlazor) | Wasm blockchain explorer based on [Blazor](https://github.com/aspnet/Blazor) and [ReactiveUI](https://github.com/reactiveui/ReactiveUI)|
-### Video guides
-There a few video guides, which might be helpful to get started. Please note that these videos are for version 1.0, so some areas have changed.
 
-The code for these tutorials can be found [here](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Tutorials)
+### Video guides
+There a few video guides, which might be helpful to get started. 
+**NOTE: These videos are for version 1.0, so some areas have changed.**
+
+Please use the Nethereum playground for the latest samples.
 
 #### Introductions
 
-These are two videos that can take you through all the initial steps from creating a contract to deployment, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code.
+These are two videos that can take you through all the initial steps from creating a contract to deployment, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code. 
 
 ##### Windows, Visual Studio
 This video takes you through the steps of creating the a smart contract, compile it, start a private chain and deploy it using Nethereum.

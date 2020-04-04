@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -6,9 +7,29 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Util
 {
+    public class UniqueAddressList : HashSet<string>
+    {
+        public UniqueAddressList() : base(new AddressEqualityComparer()) { }
+    }
+
+
+    public class AddressEqualityComparer : IEqualityComparer<string>
+    {
+        public bool Equals(string x, string y)
+        {
+            return x.IsTheSameAddress(y);
+        }
+
+        public int GetHashCode(string obj)
+        {
+            return -1;
+        }
+    }
+
     public class AddressUtil
     {
         private static AddressUtil _current;
+        public const string AddressEmptyAsHex = "0x0";
 
         public static AddressUtil Current
         {
@@ -19,8 +40,38 @@ namespace Nethereum.Util
             }
         }
 
+        public bool IsAnEmptyAddress(string address)
+        {
+#if !NET35
+            if (string.IsNullOrWhiteSpace(address))
+                return true;
+#else
+            if (string.IsNullOrEmpty(address)) return true;
+#endif
+                return address == AddressEmptyAsHex;
+
+        }
+
+        public bool IsNotAnEmptyAddress(string address)
+        {
+            return !IsAnEmptyAddress(address);
+
+        }
+
+        public string AddressValueOrEmpty(string address)
+        {
+            return address.IsAnEmptyAddress() ? AddressEmptyAsHex : address;
+        }
+
+        public bool IsEmptyOrEqualsAddress(string address1, string candidate)
+        {
+            return IsAnEmptyAddress(address1) || AreAddressesTheSame(address1,candidate);
+        }
+
         public bool AreAddressesTheSame(string address1, string address2)
         {
+            if (address1.IsAnEmptyAddress() && address2.IsAnEmptyAddress()) return true;
+            if (address1.IsAnEmptyAddress() || address2.IsAnEmptyAddress()) return false;
             //simple string comparison as opposed to use big integer comparison
             return string.Equals(address1.EnsureHexPrefix()?.ToLowerInvariant(), address2.EnsureHexPrefix()?.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase); 
         }
@@ -60,7 +111,7 @@ namespace Nethereum.Util
         {
             if (string.IsNullOrEmpty(address)) return false;
             return address.HasHexPrefix() && IsValidAddressLength(address) &&
-                   address.ToCharArray().All(char.IsLetterOrDigit);
+                   address.IsHex();
         }
 
         public bool IsChecksumAddress(string address)
